@@ -16,8 +16,8 @@ export default defineConfig({
         name: "Speed Tic-Tac-Toe",
         short_name: "SpeedTTT",
         description: "Real-time multiplayer Speed Tic-Tac-Toe with timer, modes, and leaderboard",
-        theme_color: "#0f0f1a",
-        background_color: "#0f0f1a",
+        theme_color: "#f4f8ff",
+        background_color: "#f4f8ff",
         display: "standalone",
         start_url: "/",
         icons: [
@@ -45,4 +45,3 @@ export default defineConfig({
     port: 5173,
   },
 });
-

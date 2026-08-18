@@ -44,8 +44,9 @@ Real-time multiplayer Speed Tic-Tac-Toe with:
 | `server/src/socket/timer.ts` | startTurnTimer, handleTimeout, AI move scheduler |
 | `server/src/socket/lifecycle.ts` | endGame, requestRematch, resetForRematch, handleDisconnect |
 | `server/src/db/supabase.ts` | Supabase helpers: upsertPlayer, awardPoints, checkUsernameAvailable, setUsername, getLeaderboard, getPlayerEntry, getLeaderboardResponse |
-| `client/src/App.tsx` | Root app: view router, global socket wiring, sound effects |
-| `client/src/pages/Lobby.tsx` | Name input, mode selector, Google sign-in, username modal, match-find |
+| `client/src/App.tsx` | Root app: view router, global socket wiring, header navbar with compact Google auth UI, sound effects |
+| `client/src/pages/Lobby.tsx` | Choose mode screen: nickname, mode cards, How to Play, Find Match |
+| `client/src/components/PlayTypeSelect.tsx` | Play type selection screen: Play Online vs Play with Friends cards |
 | `client/src/pages/Searching.tsx` | Searching screen with elapsed timer |
 | `client/src/pages/GamePage.tsx` | Game view: board + timer + end overlay |
 | `client/src/pages/Leaderboard.tsx` | Top-100 table, 12s polling, visibility-aware, own-row pinned |
