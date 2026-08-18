@@ -108,17 +108,21 @@ export async function signOut(): Promise<void> {
   localStorage.removeItem(PTS_KEY);
 }
 
-// ─── Build AuthUser from current session ─────────────────────────────────────
 export async function buildAuthUser(): Promise<AuthUser | null> {
+  const user = await getCurrentUser();
   let id = localStorage.getItem(ID_KEY);
 
-  if (!id) {
+  if (user) {
+    if (id !== user.id) {
+      id = user.id;
+      localStorage.setItem(ID_KEY, id);
+    }
+  } else if (!id) {
     const sessionId = await ensureSession();
     id = sessionId ?? crypto.randomUUID();
     localStorage.setItem(ID_KEY, id);
   }
 
-  const user = await getCurrentUser();
   const isGoogle = !!(user && !user.is_anonymous);
 
   // Fetch stored name from DB if Supabase available, else fallback to localStorage
@@ -148,8 +152,14 @@ export async function buildAuthUser(): Promise<AuthUser | null> {
 
 // ─── Build PlayerInfo (used when queuing for a match) ─────────────────────────
 export async function buildPlayerInfo(name: string): Promise<PlayerInfo> {
+  const user = await getCurrentUser();
   let id = localStorage.getItem(ID_KEY);
-  if (!id) {
+  if (user) {
+    if (id !== user.id) {
+      id = user.id;
+      localStorage.setItem(ID_KEY, id);
+    }
+  } else if (!id) {
     const sessionId = await ensureSession();
     id = sessionId ?? crypto.randomUUID();
     localStorage.setItem(ID_KEY, id);
