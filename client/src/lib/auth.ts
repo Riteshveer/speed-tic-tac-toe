@@ -32,7 +32,12 @@ const NAME_KEY = "stt_player_name";
 const PTS_KEY  = "stt_player_pts";
 
 export function getSavedName(): string {
-  return localStorage.getItem(NAME_KEY) ?? "";
+  let name = localStorage.getItem(NAME_KEY);
+  if (!name || !name.trim()) {
+    name = `Guest-${Math.floor(1000 + Math.random() * 9000)}`;
+    localStorage.setItem(NAME_KEY, name);
+  }
+  return name;
 }
 export function saveName(name: string): void {
   localStorage.setItem(NAME_KEY, name);
@@ -121,6 +126,10 @@ export async function buildAuthUser(): Promise<AuthUser | null> {
     const isGoogle = !!(user && !user.is_anonymous);
 
     let name = localStorage.getItem(NAME_KEY) ?? "";
+    if (!name.trim()) {
+      name = `Guest-${Math.floor(1000 + Math.random() * 9000)}`;
+      saveName(name);
+    }
     let points = Number(localStorage.getItem(PTS_KEY) ?? "0");
     let usernameSet = false;
 

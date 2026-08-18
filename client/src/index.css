@@ -198,45 +198,38 @@ body {
 
 /* Header Auth UI */
 .navbar-auth {
+  position: relative;
   display: flex;
   align-items: center;
 }
-.btn-nav-google {
-  display: inline-flex;
+
+.nav-profile-trigger {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 100px;
   background: white;
+  padding: 4px 10px 4px 5px;
+  border-radius: 100px;
   border: 1.5px solid rgba(226, 232, 240, 0.9);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1e293b;
   cursor: pointer;
-  transition: var(--transition);
+  outline: none;
+  transition: var(--transition-bounce);
 }
-.btn-nav-google:hover:not(:disabled) {
+
+.nav-profile-trigger:hover {
   border-color: #38bdf8;
-  box-shadow: 0 4px 14px rgba(0, 200, 255, 0.2);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 200, 255, 0.15);
 }
-.nav-user-block {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: white;
-  padding: 4px 12px 4px 6px;
-  border-radius: 100px;
-  border: 1.5px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
+
 .nav-user-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: #e0f2fe;
 }
+
 .nav-user-name {
   font-size: 0.85rem;
   font-weight: 700;
@@ -246,18 +239,98 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.btn-nav-signout {
-  background: none;
-  border: none;
-  font-size: 0.78rem;
-  font-weight: 600;
+
+.nav-chevron {
   color: #64748b;
-  cursor: pointer;
-  transition: var(--transition);
-  margin-left: 4px;
+  transition: transform 0.2s ease;
 }
-.btn-nav-signout:hover {
+
+.nav-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Profile Dropdown Popover */
+.nav-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: var(--shadow-deep);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1000;
+  transform-origin: top right;
+}
+
+.nav-dropdown-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-dropdown-role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nav-dropdown-points {
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.nav-dropdown-divider {
+  height: 1px;
+  background: #e2e8f0;
+  width: 100%;
+}
+
+.btn-dropdown-action {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  border: none;
+  box-sizing: border-box;
+}
+
+.btn-dropdown-signout {
+  background: #fef2f2;
   color: #ef4444;
+}
+.btn-dropdown-signout:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
+}
+
+.btn-dropdown-google {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+.btn-dropdown-google:hover:not(:disabled) {
+  border-color: #3b82f6;
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+.btn-dropdown-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ─── Play Type Selection Screen ─────────────────────────────────────────────── */
@@ -335,21 +408,41 @@ body {
 }
 
 .btn-back-link {
-  background: none;
-  border: none;
-  font-size: 0.85rem;
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  background: white;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #0284c7;
+  color: #2563eb;
   cursor: pointer;
-  margin-bottom: 12px;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.05);
+  animation: back-btn-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
 .btn-back-link:hover {
+  transform: translateX(-3px) scale(1.02);
+  border-color: #3b82f6;
+  background: #f4f8ff;
   color: #2563eb;
-  text-decoration: underline;
+}
+
+@keyframes back-btn-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ─── Game Layout & Corner Player Profile Cards ──────────────────────────────── */
@@ -508,7 +601,7 @@ body {
   flex-direction: column;
   gap: 24px;
 }
-.lobby-hero { text-align: center; padding: 12px 0 8px; }
+.lobby-hero { text-align: center; padding: 40px 0 8px; }
 .lobby-hero h1 {
   font-size: clamp(2.2rem, 6vw, 3.2rem);
   font-weight: 900;

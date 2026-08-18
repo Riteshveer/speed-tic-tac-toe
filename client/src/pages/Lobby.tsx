@@ -203,51 +203,21 @@ export default function Lobby({ onQueue, authUser: propAuthUser, onAuthUpdate }:
   }
 
   return (
-    <div className="lobby fade-in">
+    <div className="lobby fade-in" style={{ position: "relative" }}>
       {showUsernameModal && authUser && (
         <UsernameModal userId={authUser.id} onDone={handleUsernameDone} />
       )}
 
+      <button
+        className="btn-back-link"
+        onClick={() => setStep("type")}
+      >
+        ← Back to Play Options
+      </button>
+
       <div className="lobby-hero">
-        <button
-          className="btn-back-link"
-          onClick={() => setStep("type")}
-        >
-          ← Back to Play Options
-        </button>
         <h1>Speed<br />Tic-Tac-Toe</h1>
         <p>Real-time multiplayer with shrinking timers,<br />skill-based matchmaking &amp; a global leaderboard.</p>
-      </div>
-
-      {/* ─── Name input (locked for Google users who set username) ──────────── */}
-      <div>
-        <label
-          htmlFor="input-name"
-          style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}
-        >
-          Your Display Name
-        </label>
-        <input
-          id="input-name"
-          className="name-input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleStart(); }}
-          placeholder="Enter nickname…"
-          maxLength={20}
-          autoFocus={!authUser?.isGoogle}
-          disabled={authUser?.isGoogle && authUser.usernameSet}
-        />
-        {authUser?.isGoogle && authUser.usernameSet && (
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: 4 }}>
-            Username locked — linked to your Google account
-          </p>
-        )}
-        {nameError && (
-          <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: 6 }}>
-            {nameError}
-          </p>
-        )}
       </div>
 
       {/* ─── Mode selection ─────────────────────────────────────────────────── */}
