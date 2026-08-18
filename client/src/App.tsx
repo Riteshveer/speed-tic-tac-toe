@@ -35,10 +35,16 @@ export default function App() {
 
   // ── Auth wiring for Navbar ─────────────────────────────────────────────────
   useEffect(() => {
-    buildAuthUser().then((u) => {
-      setAuthUser(u);
-      setAuthLoading(false);
-    });
+    buildAuthUser()
+      .then((u) => {
+        setAuthUser(u);
+      })
+      .catch((e) => {
+        console.error("[app] auth load error:", e);
+      })
+      .finally(() => {
+        setAuthLoading(false);
+      });
 
     const unsub = onAuthChange((u) => {
       setAuthUser(u);

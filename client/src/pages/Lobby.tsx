@@ -140,7 +140,6 @@ export default function Lobby({ onQueue, authUser: propAuthUser, onAuthUpdate }:
 
   const authUser = propAuthUser ?? localAuthUser;
 
-  // Load auth state on mount + listen for OAuth redirects
   useEffect(() => {
     buildAuthUser().then((u) => {
       setLocalAuthUser(u);
@@ -186,9 +185,22 @@ export default function Lobby({ onQueue, authUser: propAuthUser, onAuthUpdate }:
   }
 
   const handlePlayWithFriends = () => {
-    // Placeholder callback for private room / invite flow
     alert("Play with Friends private rooms are coming soon!");
   };
+
+  if (step === "type") {
+    return (
+      <>
+        {showUsernameModal && authUser && (
+          <UsernameModal userId={authUser.id} onDone={handleUsernameDone} />
+        )}
+        <PlayTypeSelect
+          onSelectPlayOnline={() => setStep("mode")}
+          onSelectPlayWithFriends={handlePlayWithFriends}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="lobby fade-in">
@@ -196,109 +208,100 @@ export default function Lobby({ onQueue, authUser: propAuthUser, onAuthUpdate }:
         <UsernameModal userId={authUser.id} onDone={handleUsernameDone} />
       )}
 
-      {step === "type" ? (
-        <PlayTypeSelect
-          onSelectPlayOnline={() => setStep("mode")}
-          onSelectPlayWithFriends={handlePlayWithFriends}
+      <div className="lobby-hero">
+        <button
+          className="btn-back-link"
+          onClick={() => setStep("type")}
+        >
+          ← Back to Play Options
+        </button>
+        <h1>Speed<br />Tic-Tac-Toe</h1>
+        <p>Real-time multiplayer with shrinking timers,<br />skill-based matchmaking &amp; a global leaderboard.</p>
+      </div>
+
+      {/* ─── Name input (locked for Google users who set username) ──────────── */}
+      <div>
+        <label
+          htmlFor="input-name"
+          style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}
+        >
+          Your Display Name
+        </label>
+        <input
+          id="input-name"
+          className="name-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleStart(); }}
+          placeholder="Enter nickname…"
+          maxLength={20}
+          autoFocus={!authUser?.isGoogle}
+          disabled={authUser?.isGoogle && authUser.usernameSet}
         />
-      ) : (
-        <>
-          <div className="lobby-hero">
-            <button
-              className="btn-back-link"
-              onClick={() => setStep("type")}
-            >
-              ← Back to Play Options
-            </button>
-            <h1>Speed<br />Tic-Tac-Toe</h1>
-            <p>Real-time multiplayer with shrinking timers,<br />skill-based matchmaking &amp; a global leaderboard.</p>
-          </div>
+        {authUser?.isGoogle && authUser.usernameSet && (
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: 4 }}>
+            Username locked — linked to your Google account
+          </p>
+        )}
+        {nameError && (
+          <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: 6 }}>
+            {nameError}
+          </p>
+        )}
+      </div>
 
-          {/* ─── Name input (locked for Google users who set username) ──────────── */}
-          <div>
-            <label
-              htmlFor="input-name"
-              style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}
-            >
-              Your Display Name
-            </label>
-            <input
-              id="input-name"
-              className="name-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleStart(); }}
-              placeholder="Enter nickname…"
-              maxLength={20}
-              autoFocus={!authUser?.isGoogle}
-              disabled={authUser?.isGoogle && authUser.usernameSet}
-            />
-            {authUser?.isGoogle && authUser.usernameSet && (
-              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: 4 }}>
-                Username locked — linked to your Google account
-              </p>
-            )}
-            {nameError && (
-              <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: 6 }}>
-                {nameError}
-              </p>
-            )}
-          </div>
-
-          {/* ─── Mode selection ─────────────────────────────────────────────────── */}
-          <div>
-            <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: 12, color: "var(--text-secondary)" }}>
-              Choose Mode
-            </div>
-            <div className="mode-cards">
-              <button
-                id="mode-classic"
-                className={`mode-card ${mode === "classic" ? "selected-classic" : ""}`}
-                onClick={() => setMode("classic")}
-              >
-                <div className="mode-card-icon">⏱️</div>
-                <div className="mode-card-name text-o">Classic</div>
-                <div className="mode-card-desc">
-                  Flat 7-second timer per move. Perfect for beginners.
-                  <br /><strong>+2 pts</strong> per win
-                </div>
-              </button>
-              <button
-                id="mode-sudden-death"
-                className={`mode-card ${mode === "sudden-death" ? "selected-sudden-death" : ""}`}
-                onClick={() => setMode("sudden-death")}
-              >
-                <div className="mode-card-icon">🔥</div>
-                <div className="mode-card-name text-x">Sudden Death</div>
-                <div className="mode-card-desc">
-                  Timer shrinks: 7→6→5→4→3s. Every move counts.
-                  <br /><strong>+5 pts</strong> per win
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* ─── Rules ──────────────────────────────────────────────────────────── */}
-          <div className="card" style={{ background: "var(--bg-glass)", fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.7 }}>
-            <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>📋 How to Play</div>
-            <ul style={{ paddingLeft: 16 }}>
-              <li><strong>Placement:</strong> each player drops 3 pieces on any empty cell.</li>
-              <li><strong>Movement:</strong> pick up one of your pieces and move it anywhere empty.</li>
-              <li><strong>Win:</strong> get your 3 pieces in any row, column, or diagonal.</li>
-              <li><strong>Timeout:</strong> run out of time → instant loss!</li>
-            </ul>
-          </div>
-
+      {/* ─── Mode selection ─────────────────────────────────────────────────── */}
+      <div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: 12, color: "var(--text-secondary)" }}>
+          Choose Mode
+        </div>
+        <div className="mode-cards">
           <button
-            id="btn-find-match"
-            className="btn btn-primary btn-lg btn-full"
-            onClick={handleStart}
-            disabled={loading}
+            id="mode-classic"
+            className={`mode-card ${mode === "classic" ? "selected-classic" : ""}`}
+            onClick={() => setMode("classic")}
           >
-            {loading ? "Setting up…" : "⚡ Find Match"}
+            <div className="mode-card-icon">⏱️</div>
+            <div className="mode-card-name text-o">Classic</div>
+            <div className="mode-card-desc">
+              Flat 7-second timer per move. Perfect for beginners.
+              <br /><strong>+2 pts</strong> per win
+            </div>
           </button>
-        </>
-      )}
+          <button
+            id="mode-sudden-death"
+            className={`mode-card ${mode === "sudden-death" ? "selected-sudden-death" : ""}`}
+            onClick={() => setMode("sudden-death")}
+          >
+            <div className="mode-card-icon">🔥</div>
+            <div className="mode-card-name text-x">Sudden Death</div>
+            <div className="mode-card-desc">
+              Timer shrinks: 7→6→5→4→3s. Every move counts.
+              <br /><strong>+5 pts</strong> per win
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Rules ──────────────────────────────────────────────────────────── */}
+      <div className="card" style={{ background: "var(--bg-glass)", fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.7 }}>
+        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>📋 How to Play</div>
+        <ul style={{ paddingLeft: 16 }}>
+          <li><strong>Placement:</strong> each player drops 3 pieces on any empty cell.</li>
+          <li><strong>Movement:</strong> pick up one of your pieces and move it anywhere empty.</li>
+          <li><strong>Win:</strong> get your 3 pieces in any row, column, or diagonal.</li>
+          <li><strong>Timeout:</strong> run out of time → instant loss!</li>
+        </ul>
+      </div>
+
+      <button
+        id="btn-find-match"
+        className="btn btn-primary btn-lg btn-full"
+        onClick={handleStart}
+        disabled={loading}
+      >
+        {loading ? "Setting up…" : "⚡ Find Match"}
+      </button>
     </div>
   );
 }

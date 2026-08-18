@@ -58,7 +58,6 @@ async function ensureSession(): Promise<string | null> {
     const user = await getCurrentUser();
     if (user) return user.id;
 
-    // Sign in anonymously (Supabase creates a real but anonymous user)
     const { data, error } = await supabase.auth.signInAnonymously();
     if (error) { console.error("[auth] anon sign-in:", error.message); return null; }
     return data.user?.id ?? null;
@@ -69,8 +68,6 @@ async function ensureSession(): Promise<string | null> {
 }
 
 // ─── Google OAuth sign-in ─────────────────────────────────────────────────────
-// If user is currently anonymous, this LINKS (upgrades) their account.
-// All points earned as anonymous carry over because the row id stays the same.
 export async function signInWithGoogle(): Promise<void> {
   if (!supabase) {
     alert("Supabase is not configured. Add your Supabase keys to .env.local");
@@ -80,18 +77,15 @@ export async function signInWithGoogle(): Promise<void> {
   const isAnon = user?.is_anonymous ?? false;
 
   if (isAnon) {
-    // Link anonymous user to Google identity (points carry over!)
     const { error } = await supabase.auth.linkIdentity({ provider: "google" });
     if (error) {
       console.error("[auth] linkIdentity error:", error.message);
-      // Fall back to full redirect sign-in
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: window.location.origin },
       });
     }
   } else {
-    // Fresh sign-in
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin },
@@ -109,45 +103,56 @@ export async function signOut(): Promise<void> {
 }
 
 export async function buildAuthUser(): Promise<AuthUser | null> {
-  const user = await getCurrentUser();
-  let id = localStorage.getItem(ID_KEY);
+  try {
+    const user = await getCurrentUser();
+    let id = localStorage.getItem(ID_KEY);
 
-  if (user) {
-    if (id !== user.id) {
-      id = user.id;
+    if (user) {
+      if (id !== user.id) {
+        id = user.id;
+        localStorage.setItem(ID_KEY, id);
+      }
+    } else if (!id) {
+      const sessionId = await ensureSession();
+      id = sessionId ?? crypto.randomUUID();
       localStorage.setItem(ID_KEY, id);
     }
-  } else if (!id) {
-    const sessionId = await ensureSession();
-    id = sessionId ?? crypto.randomUUID();
-    localStorage.setItem(ID_KEY, id);
+
+    const isGoogle = !!(user && !user.is_anonymous);
+
+    let name = localStorage.getItem(NAME_KEY) ?? "";
+    let points = Number(localStorage.getItem(PTS_KEY) ?? "0");
+    let usernameSet = false;
+
+    if (supabase && user) {
+      try {
+        const { data } = await supabase
+          .from("players")
+          .select("name, points, username_set")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) {
+          name = (data.name as string) || name;
+          points = (data.points as number) ?? points;
+          usernameSet = (data.username_set as boolean) ?? false;
+          saveName(name);
+          localStorage.setItem(PTS_KEY, String(points));
+        }
+      } catch { /* fallback to local storage */ }
+    }
+
+    return { id: id ?? crypto.randomUUID(), name, points, isGoogle, usernameSet };
+  } catch (e) {
+    console.error("[auth] error in buildAuthUser:", e);
+    const fallbackId = localStorage.getItem(ID_KEY) ?? crypto.randomUUID();
+    return {
+      id: fallbackId,
+      name: localStorage.getItem(NAME_KEY) ?? "",
+      points: 0,
+      isGoogle: false,
+      usernameSet: false,
+    };
   }
-
-  const isGoogle = !!(user && !user.is_anonymous);
-
-  // Fetch stored name from DB if Supabase available, else fallback to localStorage
-  let name = localStorage.getItem(NAME_KEY) ?? "";
-  let points = Number(localStorage.getItem(PTS_KEY) ?? "0");
-  let usernameSet = false;
-
-  if (supabase && user) {
-    try {
-      const { data } = await supabase
-        .from("players")
-        .select("name, points, username_set")
-        .eq("id", user.id)
-        .single();
-      if (data) {
-        name = (data.name as string) || name;
-        points = (data.points as number) ?? points;
-        usernameSet = (data.username_set as boolean) ?? false;
-        saveName(name);
-        localStorage.setItem(PTS_KEY, String(points));
-      }
-    } catch { /* use localStorage fallback */ }
-  }
-
-  return { id, name, points, isGoogle, usernameSet };
 }
 
 // ─── Build PlayerInfo (used when queuing for a match) ─────────────────────────
@@ -166,7 +171,7 @@ export async function buildPlayerInfo(name: string): Promise<PlayerInfo> {
   }
   const points = Number(localStorage.getItem(PTS_KEY) ?? "0");
   saveName(name);
-  return { id, name: name.trim(), points };
+  return { id: id ?? crypto.randomUUID(), name: name.trim(), points };
 }
 
 // ─── Set username via server REST API ─────────────────────────────────────────
