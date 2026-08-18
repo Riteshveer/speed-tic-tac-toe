@@ -98,8 +98,12 @@ export default function GamePage({
         {/* 3x3 Board */}
         <Board state={state} onMove={onMove} />
 
-        {/* Dual Turn Toggle Switch Pill [ X | O ] */}
-        <TurnIndicatorPill turn={turn} status={status} />
+        {/* Dual Turn Toggle Switch Pill [ X | O ] during gameplay, or EndScreen result panel when over */}
+        {status === "playing" ? (
+          <TurnIndicatorPill turn={turn} status={status} />
+        ) : (
+          <EndScreen state={state} onRematch={onRematch} onLeave={onLeave} />
+        )}
       </div>
 
       {/* Bottom Right: Player 2 (Opponent) */}
@@ -113,11 +117,6 @@ export default function GamePage({
           position="bottom-right"
         />
       </div>
-
-      {/* End Screen Overlay */}
-      {status === "over" && (
-        <EndScreen state={state} onRematch={onRematch} onLeave={onLeave} />
-      )}
 
       {/* Disconnect / Info Toast */}
       {toast && <div className="toast-neon">{toast}</div>}

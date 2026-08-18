@@ -30,14 +30,33 @@ export default function Board({ state, onMove }: BoardProps) {
     setSelectedCell(null);
   }, [board]);
 
-  // Determine winning cells
+  // Determine winning cells and get matching winning line index
   const winCells = new Set<number>();
+  let winLineIndex: number | null = null;
   if (winner) {
-    for (const line of WIN_LINES) {
+    WIN_LINES.forEach((line, index) => {
       const vals = line.map((i) => board[i]);
-      if (vals.every((v) => v === winner)) line.forEach((i) => winCells.add(i));
+      if (vals.every((v) => v === winner)) {
+        line.forEach((i) => winCells.add(i));
+        winLineIndex = index;
+      }
+    });
+  }
+
+  function getWinLineCoords(index: number) {
+    switch (index) {
+      case 0: return { x1: "10%", y1: "16.67%", x2: "90%", y2: "16.67%" };
+      case 1: return { x1: "10%", y1: "50%", x2: "90%", y2: "50%" };
+      case 2: return { x1: "10%", y1: "83.33%", x2: "90%", y2: "83.33%" };
+      case 3: return { x1: "16.67%", y1: "10%", x2: "16.67%", y2: "90%" };
+      case 4: return { x1: "50%", y1: "10%", x2: "50%", y2: "90%" };
+      case 5: return { x1: "83.33%", y1: "10%", x2: "83.33%", y2: "90%" };
+      case 6: return { x1: "12%", y1: "12%", x2: "88%", y2: "88%" };
+      case 7: return { x1: "88%", y1: "12%", x2: "12%", y2: "88%" };
+      default: return null;
     }
   }
+
 
   function handleCellClick(idx: number) {
     if (!isMyTurn) return;
@@ -141,6 +160,31 @@ export default function Board({ state, onMove }: BoardProps) {
             </button>
           ))}
         </div>
+
+        {winLineIndex !== null && (() => {
+          const coords = getWinLineCoords(winLineIndex);
+          if (!coords) return null;
+          return (
+            <svg className="winning-line-svg" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="goldGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FFE082" />
+                  <stop offset="50%" stopColor="#FFD700" />
+                  <stop offset="100%" stopColor="#FFB300" />
+                </linearGradient>
+              </defs>
+              <line
+                x1={coords.x1}
+                y1={coords.y1}
+                x2={coords.x2}
+                y2={coords.y2}
+                stroke="url(#goldGlowGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+            </svg>
+          );
+        })()}
       </div>
     </div>
   );
