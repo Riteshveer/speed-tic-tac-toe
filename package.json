@@ -1,0 +1,11 @@
+{
+  "name": "speed-tictactoe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Speed Tic-Tac-Toe monorepo root",
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npx vite --port 5173",
+    "install:all": "cd server && npm install && cd ../client && npm install"
+  }
+}
