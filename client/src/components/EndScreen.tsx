@@ -1,4 +1,4 @@
-// ─── End-Game Screen ──────────────────────────────────────────────────────────
+// ─── White-Neon End-Game Screen ───────────────────────────────────────────────
 import { GameStatePayload } from "@shared/types";
 
 interface EndScreenProps {
@@ -16,45 +16,41 @@ export default function EndScreen({ state, onRematch, onLeave }: EndScreenProps)
   const oppRole = myRole === "X" ? "O" : "X";
   const oppRematch = rematch[oppRole];
 
-  const emoji = isDraw ? "🤝" : isWinner ? "🏆" : "😔";
-  const title = isDraw ? "Draw!" : isWinner ? "You Won!" : "You Lost";
+  const emoji = isDraw ? "🤝" : isWinner ? "🏆" : "⚡";
+  const title = isDraw ? "Draw Match!" : isWinner ? "Victory!" : "Defeat";
   const pts = isWinner ? (mode === "sudden-death" ? "+5 pts" : "+2 pts") : "";
-  const color = isWinner ? "var(--accent-win)" : isDraw ? "var(--accent-gold)" : "#f87171";
+  const titleColor = isWinner ? "#00c853" : isDraw ? "#0284c7" : "#ef4444";
 
   return (
-    <div className="end-screen" id="end-screen">
-      <div className="end-card">
-        <span className="end-emoji">{emoji}</span>
-        <div className="end-title" style={{ color }}>
+    <div className="end-screen-overlay fade-in" id="end-screen">
+      <div className="end-card-neon slide-up">
+        <div className="end-emoji-wrap">{emoji}</div>
+        <div className="end-title-neon" style={{ color: titleColor }}>
           {title}
         </div>
-        {pts && (
-          <div style={{ color: "var(--accent-gold)", fontWeight: 700, fontSize: "1rem", marginBottom: 4 }}>
-            {pts}
-          </div>
-        )}
-        <div className="end-subtitle">
+        {pts && <div className="end-pts-badge">{pts}</div>}
+        <div className="end-subtitle-neon">
           {winner
-            ? `${players[winner].name} wins this round`
-            : "Neither player completed a line"}
+            ? `${players[winner].name} wins this match`
+            : "Neither player completed 3 in a row"}
         </div>
 
-        <div className="end-actions">
+        <div className="end-actions-neon">
           <button
             id="btn-rematch"
-            className="btn btn-primary btn-lg"
+            className="btn-neon btn-neon-primary"
             onClick={onRematch}
             disabled={myRematch}
           >
-            {myRematch ? "✓ Waiting…" : "🔄 Rematch"}
+            {myRematch ? "✓ Waiting…" : "🔄 Play Again"}
           </button>
-          <button id="btn-leave" className="btn btn-secondary" onClick={onLeave}>
-            ← Back to Lobby
+          <button id="btn-leave" className="btn-neon btn-neon-secondary" onClick={onLeave}>
+            ← Leave Game
           </button>
         </div>
 
         {myRematch && !oppRematch && (
-          <p className="rematch-waiting">Waiting for opponent…</p>
+          <p className="rematch-waiting-neon">Waiting for opponent to accept…</p>
         )}
       </div>
     </div>

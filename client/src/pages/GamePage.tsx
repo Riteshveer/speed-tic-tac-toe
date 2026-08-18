@@ -1,9 +1,10 @@
-// ─── Game Page ────────────────────────────────────────────────────────────────
-import { GameStatePayload, Move } from "@shared/types";
+// ─── White-Neon Game Page ───────────────────────────────────────────────────────
+import { GameStatePayload, Move, Player } from "@shared/types";
 import Board from "../components/Board";
 import TimerRing from "../components/TimerRing";
-import PlayerBanners from "../components/PlayerBanners";
 import EndScreen from "../components/EndScreen";
+import PlayerProfileCard from "../components/PlayerProfileCard";
+import TurnIndicatorPill from "../components/TurnIndicatorPill";
 import { getTimeLimit } from "../lib/gameUtils";
 
 interface GamePageProps {
@@ -21,65 +22,105 @@ export default function GamePage({
   onLeave,
   toast,
 }: GamePageProps) {
-  const { turn, myRole, phase, status, mode, deadline, moveCount } = state;
+  const { turn, myRole, phase, status, mode, deadline, moveCount, players } = state;
   const isMyTurn = turn === myRole && status === "playing";
+  const oppRole: Player = myRole === "X" ? "O" : "X";
 
   const currentTimeLimit = getTimeLimit(mode, moveCount?.[turn] ?? 0);
 
+  const player1 = players[myRole];
+  const player2 = players[oppRole];
+
+  // Ranks based on relative points
+  const p1Rank = player1.points >= player2.points ? 1 : 2;
+  const p2Rank = p1Rank === 1 ? 2 : 1;
+
   function getInstruction(): string {
     if (status === "over") return "";
-    if (!isMyTurn) return `Waiting for ${state.players[turn].name}…`;
+    if (!isMyTurn) return `Waiting for ${players[turn].name}…`;
     if (phase === "placement") {
       const left = 3 - state.placedCount[myRole];
-      return `Click any empty cell to place (${left} piece${left !== 1 ? "s" : ""} left)`;
+      return `Place your piece (${left} left)`;
     }
     if (state.selected !== null) {
-      return "Click an empty cell to move there, or click piece again to deselect";
+      return "Click an empty cell to move, or click again to deselect";
     }
-    return "Click one of your pieces to pick it up";
+    return "Click your piece to pick it up";
   }
 
   return (
-    <div className="game-layout fade-in">
-      <PlayerBanners state={state} />
+    <div className="neon-game-page fade-in">
+      {/* Background Decor Shapes */}
+      <div className="bg-decor-shape shape-x-top-right">✕</div>
+      <div className="bg-decor-shape shape-o-bottom-left">◯</div>
+      <div className="bg-decor-glow glow-top-left" />
+      <div className="bg-decor-glow glow-bottom-right" />
 
-      {/* Timer + phase badge */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
-        <div className="timer-wrap">
-          <TimerRing
-            deadlineMs={deadline}
-            totalSec={currentTimeLimit}
-            player={turn}
-            isMyTurn={isMyTurn}
-          />
-        </div>
-        <div className="phase-badge">
-          {phase === "placement" ? "📍 Placement" : "🚀 Movement"}
-          <span className="text-muted" style={{ marginLeft: 4, fontSize: "0.75rem" }}>
-            {mode === "classic" ? "Classic" : "Sudden Death 🔥"}
-          </span>
-        </div>
+      {/* Top Left: Player 1 (You) */}
+      <div className="game-corner-player top-left-corner">
+        <PlayerProfileCard
+          playerInfo={player1}
+          role={myRole}
+          isYou={true}
+          isActiveTurn={turn === myRole && status === "playing"}
+          rank={p1Rank}
+          position="top-left"
+        />
       </div>
 
-      {/* Instruction */}
-      <div
-        className="instruction-bar"
-        style={{
-          color: isMyTurn ? "var(--text-primary)" : "var(--text-secondary)",
-        }}
-      >
-        {getInstruction()}
+      {/* Center: Game Arena */}
+      <div className="game-center-arena">
+        {/* Phase & Timer Header */}
+        <div className="game-header-bar">
+          <div className="timer-wrap">
+            <TimerRing
+              deadlineMs={deadline}
+              totalSec={currentTimeLimit}
+              player={turn}
+              isMyTurn={isMyTurn}
+            />
+          </div>
+          <div className="phase-pill-badge">
+            {phase === "placement" ? "📍 Placement Phase" : "🚀 Movement Phase"}
+            <span className="mode-tag">
+              {mode === "classic" ? "Classic" : "Sudden Death 🔥"}
+            </span>
+          </div>
+        </div>
+
+        {/* Dynamic turn instruction */}
+        <div
+          className={`instruction-banner ${isMyTurn ? "is-my-turn" : ""}`}
+        >
+          {getInstruction()}
+        </div>
+
+        {/* 3x3 Board */}
+        <Board state={state} onMove={onMove} />
+
+        {/* Dual Turn Toggle Switch Pill [ X | O ] */}
+        <TurnIndicatorPill turn={turn} status={status} />
       </div>
 
-      <Board state={state} onMove={onMove} />
+      {/* Bottom Right: Player 2 (Opponent) */}
+      <div className="game-corner-player bottom-right-corner">
+        <PlayerProfileCard
+          playerInfo={player2}
+          role={oppRole}
+          isYou={false}
+          isActiveTurn={turn === oppRole && status === "playing"}
+          rank={p2Rank}
+          position="bottom-right"
+        />
+      </div>
 
-      {/* End screen overlay */}
+      {/* End Screen Overlay */}
       {status === "over" && (
         <EndScreen state={state} onRematch={onRematch} onLeave={onLeave} />
       )}
 
-      {/* Disconnect toast */}
-      {toast && <div className="toast">{toast}</div>}
+      {/* Disconnect / Info Toast */}
+      {toast && <div className="toast-neon">{toast}</div>}
     </div>
   );
 }
