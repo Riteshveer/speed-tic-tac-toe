@@ -4,7 +4,7 @@
   "private": true,
   "description": "Speed Tic-Tac-Toe monorepo root",
   "scripts": {
-    "build": "npm --prefix client run build && node -e \"try { require('fs').cpSync('client/dist', './dist', {recursive: true}) } catch(e){}\"",
+    "build": "cd client && npm install && npm run build",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npx vite --port 5173",
     "install:all": "cd server && npm install && cd ../client && npm install"

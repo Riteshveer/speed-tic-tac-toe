@@ -1,0 +1,5 @@
+name = "speed-tic-tac-toe"
+pages_build_output_dir = "client/dist"
+
+[build]
+command = "cd client && npm install && npm run build"
