@@ -1,11 +1,12 @@
 // ─── App Root ─────────────────────────────────────────────────────────────────
-// Manages view routing, socket lifecycle, and global state.
+// Manages view routing, socket lifecycle, global auth state, and navbar.
 
 import { useEffect, useRef, useState } from "react";
 import "./index.css";
-import { GameStatePayload, Mode, Move, PlayerInfo, SE } from "@shared/types";
+import { AuthUser, GameStatePayload, Mode, Move, PlayerInfo, SE } from "@shared/types";
 import { getSocket } from "./lib/socket";
 import { sounds } from "./lib/sounds";
+import { buildAuthUser, onAuthChange, signInWithGoogle, signOut } from "./lib/auth";
 import Lobby from "./pages/Lobby";
 import Searching from "./pages/Searching";
 import GamePage from "./pages/GamePage";
@@ -17,6 +18,10 @@ export default function App() {
   const [view, setView] = useState<View>("lobby");
   const [gameState, setGameState] = useState<GameStatePayload | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [signingIn, setSigningIn] = useState(false);
+
   const playerRef = useRef<PlayerInfo | null>(null);
   const modeRef = useRef<Mode>("classic");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,13 +33,37 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), ms);
   }
 
+  // ── Auth wiring for Navbar ─────────────────────────────────────────────────
+  useEffect(() => {
+    buildAuthUser().then((u) => {
+      setAuthUser(u);
+      setAuthLoading(false);
+    });
+
+    const unsub = onAuthChange((u) => {
+      setAuthUser(u);
+      setAuthLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  async function handleGoogleSignIn() {
+    setSigningIn(true);
+    await signInWithGoogle();
+    setSigningIn(false);
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    setAuthUser(null);
+  }
+
   // ── Socket wiring ─────────────────────────────────────────────────────────
   useEffect(() => {
     const socket = getSocket();
 
     socket.on(SE.GAME_STATE, (state: GameStatePayload) => {
       setGameState((prev) => {
-        // Sound: detect board changes
         if (prev && state.status === "playing") {
           const changed = state.board.some((c, i) => c !== prev.board[i]);
           if (changed) {
@@ -42,7 +71,6 @@ export default function App() {
             else sounds.move();
           }
         }
-        // Sound: game over transition
         if (state.status === "over" && prevStatusRef.current !== "over") {
           if (state.winner === state.myRole) sounds.win();
           else if (state.winner !== null) sounds.lose();
@@ -113,7 +141,6 @@ export default function App() {
     setView("lobby");
   }
 
-  // ── Nav ───────────────────────────────────────────────────────────────────
   function navTo(v: View) {
     if (v === view) return;
     if (v === "lobby" && (view === "game" || view === "searching")) {
@@ -130,26 +157,86 @@ export default function App() {
       <div className="app-bg" />
       <nav className="navbar">
         <span className="navbar-logo">⚡ SpeedTTT</span>
-        <div className="navbar-tabs">
-          <button
-            id="nav-play"
-            className={`navbar-tab ${view === "lobby" || inGame ? "active" : ""}`}
-            onClick={() => navTo("lobby")}
-          >
-            Play
-          </button>
-          <button
-            id="nav-leaderboard"
-            className={`navbar-tab ${view === "leaderboard" ? "active" : ""}`}
-            onClick={() => navTo("leaderboard")}
-          >
-            Leaderboard
-          </button>
+
+        <div className="navbar-right">
+          <div className="navbar-tabs">
+            <button
+              id="nav-play"
+              className={`navbar-tab ${view === "lobby" || inGame ? "active" : ""}`}
+              onClick={() => navTo("lobby")}
+            >
+              Play
+            </button>
+            <button
+              id="nav-leaderboard"
+              className={`navbar-tab ${view === "leaderboard" ? "active" : ""}`}
+              onClick={() => navTo("leaderboard")}
+            >
+              Leaderboard
+            </button>
+          </div>
+
+          {/* Compact Header Auth UI */}
+          {!authLoading && (
+            <div className="navbar-auth">
+              {authUser?.isGoogle ? (
+                <div className="nav-user-block">
+                  <img
+                    src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(
+                      authUser.name || "user"
+                    )}`}
+                    alt={authUser.name}
+                    className="nav-user-avatar"
+                  />
+                  <span className="nav-user-name" title={authUser.name}>
+                    {authUser.name}
+                  </span>
+                  <button className="btn-nav-signout" onClick={handleSignOut} title="Sign Out">
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  id="btn-google-signin-nav"
+                  className="btn-nav-google"
+                  onClick={handleGoogleSignIn}
+                  disabled={signingIn}
+                  title="Sign in with Google"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  <span>{signingIn ? "Signing in…" : "Sign in"}</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </nav>
 
       <main style={{ flex: 1 }}>
-        {view === "lobby" && <Lobby onQueue={handleQueue} />}
+        {view === "lobby" && (
+          <Lobby
+            onQueue={handleQueue}
+            authUser={authUser}
+            onAuthUpdate={setAuthUser}
+          />
+        )}
         {view === "searching" && <Searching onCancel={handleCancelSearch} />}
         {view === "game" && gameState && (
           <GamePage
@@ -163,9 +250,8 @@ export default function App() {
         {view === "leaderboard" && <Leaderboard />}
       </main>
 
-      {/* Toast outside game page (for searching/lobby) */}
-      {view !== "game" && toast && <div className="toast">{toast}</div>}
+      {/* Toast outside game page */}
+      {view !== "game" && toast && <div className="toast-neon">{toast}</div>}
     </>
   );
 }
-
