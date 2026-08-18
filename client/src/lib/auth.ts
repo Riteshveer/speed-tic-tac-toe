@@ -129,12 +129,12 @@ export async function buildAuthUser(): Promise<AuthUser | null> {
         const { data } = await supabase
           .from("players")
           .select("name, points, username_set")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (data) {
-          name = (data.name as string) || name;
-          points = (data.points as number) ?? points;
-          usernameSet = (data.username_set as boolean) ?? false;
+          .eq("id", user.id);
+        if (data && data.length > 0) {
+          const row = data[0];
+          name = (row.name as string) || name;
+          points = (row.points as number) ?? points;
+          usernameSet = (row.username_set as boolean) ?? false;
           saveName(name);
           localStorage.setItem(PTS_KEY, String(points));
         }
