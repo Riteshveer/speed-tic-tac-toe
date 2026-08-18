@@ -6,6 +6,9 @@
 
 import { createClient, User } from "@supabase/supabase-js";
 import { AuthUser, PlayerInfo } from "@shared/types";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+import { App } from "@capacitor/app";
 
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL     ?? "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
@@ -81,21 +84,77 @@ export async function signInWithGoogle(): Promise<void> {
   const user = await getCurrentUser();
   const isAnon = user?.is_anonymous ?? false;
 
-  if (isAnon) {
-    const { error } = await supabase.auth.linkIdentity({ provider: "google" });
+  const isNative = Capacitor.isNativePlatform();
+  const redirectTo = isNative ? "com.speedttt.game://login" : window.location.origin;
+
+  if (isNative) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
     if (error) {
-      console.error("[auth] linkIdentity error:", error.message);
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
+      console.error("[auth] native signInWithOAuth error:", error.message);
+      return;
+    }
+    if (data?.url) {
+      await Browser.open({ url: data.url, windowName: "_self" });
     }
   } else {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
+    if (isAnon) {
+      const { error } = await supabase.auth.linkIdentity({ provider: "google" });
+      if (error) {
+        console.error("[auth] linkIdentity error:", error.message);
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo },
+        });
+      }
+    } else {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+    }
   }
+}
+
+export function setupDeepLinks(onSuccess: () => void): () => void {
+  if (!Capacitor.isNativePlatform()) return () => {};
+
+  const handleAppUrl = async (event: { url: string }) => {
+    try {
+      const url = new URL(event.url);
+      if (url.host === "login" || url.pathname.includes("login")) {
+        const hash = url.hash;
+        const params = new URLSearchParams(hash ? hash.substring(1) : url.search);
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+
+        if (access_token && refresh_token && supabase) {
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (error) {
+            console.error("[auth] error setting native session:", error.message);
+          } else {
+            onSuccess();
+          }
+        }
+        await Browser.close();
+      }
+    } catch (e) {
+      console.error("[auth] error processing deep link:", e);
+    }
+  };
+
+  const sub = App.addListener("appUrlOpen", handleAppUrl);
+  return () => {
+    sub.then((s) => s.remove());
+  };
 }
 
 // ─── Sign out ─────────────────────────────────────────────────────────────────

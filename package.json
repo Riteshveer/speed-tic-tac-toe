@@ -7,6 +7,8 @@
     "build": "cd client && npm install && npm run build",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npx vite --port 5173",
-    "install:all": "cd server && npm install && cd ../client && npm install"
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "cap:sync": "cd client && npm run cap:sync",
+    "cap:open": "cd client && npm run cap:open"
   }
 }

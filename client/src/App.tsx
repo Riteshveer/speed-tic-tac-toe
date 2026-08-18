@@ -6,7 +6,7 @@ import "./index.css";
 import { AuthUser, GameStatePayload, Mode, Move, PlayerInfo, SE } from "@shared/types";
 import { getSocket } from "./lib/socket";
 import { sounds } from "./lib/sounds";
-import { buildAuthUser, onAuthChange, signInWithGoogle, signOut } from "./lib/auth";
+import { buildAuthUser, onAuthChange, signInWithGoogle, signOut, setupDeepLinks } from "./lib/auth";
 import Lobby from "./pages/Lobby";
 import Searching from "./pages/Searching";
 import GamePage from "./pages/GamePage";
@@ -67,7 +67,15 @@ export default function App() {
       setAuthUser(u);
       setAuthLoading(false);
     });
-    return unsub;
+
+    const unsubDeepLinks = setupDeepLinks(() => {
+      buildAuthUser().then((u) => setAuthUser(u));
+    });
+
+    return () => {
+      unsub();
+      unsubDeepLinks();
+    };
   }, []);
 
   async function handleGoogleSignIn() {

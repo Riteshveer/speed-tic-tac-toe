@@ -15,8 +15,24 @@ import {
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
 
+const allowedOrigins = CLIENT_ORIGIN.split(",").map((o) => o.trim());
+if (!allowedOrigins.includes("http://localhost")) allowedOrigins.push("http://localhost");
+if (!allowedOrigins.includes("https://localhost")) allowedOrigins.push("https://localhost");
+if (!allowedOrigins.includes("http://localhost:5173")) allowedOrigins.push("http://localhost:5173");
+
 const app = express();
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ─── Health (UptimeRobot keep-alive) ──────────────────────────────────────────
@@ -89,7 +105,7 @@ app.post("/api/username/set", async (req, res) => {
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_ORIGIN, methods: ["GET", "POST"] },
+  cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
   pingTimeout: 30_000,
   pingInterval: 10_000,
 });
